@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luna Sleep Plan · Baby Sleep Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a2e;
+    --cream: #faf8f4;
+    --warm: #f5f0e8;
+    --blush: #e8d5c4;
+    --dusty: #c4a882;
+    --sage: #8aab9b;
+    --sage-light: #b8d4c8;
+    --night: #2d2642;
+    --midnight: #1a1530;
+    --star: #f0c674;
+    --moon: #e8dcc8;
+    --accent: #d4856a;
+    --soft-red: #e07c6a;
+    --muted: #8a8a9a;
+    --card-bg: rgba(255,255,255,0.6);
+    --border: rgba(196,168,130,0.25);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(138,171,155,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 85% 90%, rgba(212,133,106,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 60% 40%, rgba(232,213,196,0.15) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    padding: 60px 20px 40px;
+    position: relative;
+  }
+
+  .moon-icon {
+    font-size: 2.4rem;
+    display: block;
+    margin-bottom: 16px;
+    animation: float 4s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.4rem, 6vw, 3.8rem);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    line-height: 1.1;
+  }
+
+  header h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  header p {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 300;
+    letter-spacing: 0.04em;
+  }
+
+  /* Progress bar */
+  .progress-section {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px 32px;
+    margin-bottom: 28px;
+    box-shadow: 0 4px 24px rgba(26,26,46,0.06);
+  }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 16px;
+  }
+
+  .progress-header h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-weight: 400;
+  }
+
+  .day-count {
+    font-size: 0.8rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .progress-bar-wrap {
+    background: var(--warm);
+    border-radius: 100px;
+    height: 8px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 100px;
+    background: linear-gradient(90deg, var(--sage) 0%, var(--accent) 100%);
+    transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .phase-pills {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  .phase-pill {
+    padding: 5px 14px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    border: 1px solid var(--border);
+    background: var(--warm);
+    color: var(--muted);
+    transition: all 0.3s;
+  }
+
+  .phase-pill.active {
+    background: var(--night);
+    color: var(--moon);
+    border-color: var(--night);
+  }
+
+  .phase-pill.done {
+    background: var(--sage-light);
+    color: var(--ink);
+    border-color: var(--sage);
+  }
+
+  /* Section titles */
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.7rem;
+    font-weight: 400;
+    margin: 40px 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Nap schedule */
+  .nap-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .nap-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 16px rgba(26,26,46,0.04);
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .nap-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--sage), var(--sage-light));
+    border-radius: 16px 16px 0 0;
+  }
+
+  .nap-card.catnap::before {
+    background: linear-gradient(90deg, var(--accent), var(--star));
+  }
+
+  .nap-card:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(26,26,46,0.1); }
+
+  .nap-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .nap-time {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .nap-duration {
+    font-size: 0.8rem;
+    color: var(--sage);
+    margin-top: 4px;
+    font-weight: 500;
+  }
+
+  .catnap .nap-duration { color: var(--accent); }
+
+  .nap-done-btn {
+    margin-top: 14px;
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .nap-done-btn:hover { background: var(--sage-light); border-color: var(--sage); color: var(--ink); }
+  .nap-done-btn.done { background: var(--sage); border-color: var(--sage); color: white; }
+
+  /* Night feed tracker */
+  .feed-tracker {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px 32px;
+    margin-bottom: 28px;
+    box-shadow: 0 4px 24px rgba(26,26,46,0.06);
+  }
+
+  .feed-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .feed-header h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 400;
+  }
+
+  .feed-count-badge {
+    background: var(--night);
+    color: var(--moon);
+    font-size: 0.75rem;
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-weight: 500;
+  }
+
+  .feed-slots {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  .feed-slot {
+    border: 1.5px dashed var(--border);
+    border-radius: 12px;
+    padding: 10px 16px;
+    min-width: 110px;
+    background: var(--warm);
+    cursor: pointer;
+    transition: all 0.25s;
+    text-align: center;
+    position: relative;
+  }
+
+  .feed-slot:hover { border-color: var(--dusty); background: var(--blush); }
+
+  .feed-slot.filled {
+    border: 1.5px solid var(--sage);
+    background: rgba(138,171,155,0.12);
+  }
+
+  .feed-slot.partner-resettle {
+    border: 1.5px solid var(--accent);
+    background: rgba(212,133,106,0.1);
+  }
+
+  .feed-slot-time {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    font-weight: 500;
+    display: block;
+    cursor: text;
+    background: transparent;
+    border: none;
+    text-align: center;
+    width: 80px;
+    color: var(--ink);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+  }
+
+  .feed-slot-type {
+    font-size: 0.68rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-top: 4px;
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+  }
+
+  .type-btn {
+    padding: 2px 7px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--warm);
+    font-size: 0.65rem;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .type-btn.sel-feed { background: var(--sage); border-color: var(--sage); color: white; }
+  .type-btn.sel-partner { background: var(--accent); border-color: var(--accent); color: white; }
+
+  .add-waking-btn {
+    padding: 10px 20px;
+    border: 1.5px dashed var(--dusty);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--dusty);
+    font-size: 0.82rem;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .add-waking-btn:hover { background: var(--blush); color: var(--ink); border-style: solid; }
+
+  /* Fading ladder */
+  .ladder-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .rung {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 22px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    box-shadow: 0 2px 12px rgba(26,26,46,0.04);
+    transition: all 0.3s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .rung.active-rung {
+    border-color: var(--sage);
+    background: rgba(138,171,155,0.08);
+    box-shadow: 0 4px 20px rgba(138,171,155,0.2);
+  }
+
+  .rung.completed-rung {
+    opacity: 0.6;
+    border-color: var(--sage-light);
+  }
+
+  .rung.completed-rung::after {
+    content: '✓';
+    position: absolute;
+    right: 22px;
+    color: var(--sage);
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  .rung-number {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--warm);
+    border: 1.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .active-rung .rung-number {
+    background: var(--sage);
+    border-color: var(--sage);
+    color: white;
+  }
+
+  .rung-content { flex: 1; }
+
+  .rung-days {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+
+  .rung-desc {
+    font-size: 0.88rem;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+
+  .rung-mark-btn {
+    padding: 7px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .rung-mark-btn:hover { background: var(--sage-light); border-color: var(--sage); color: var(--ink); }
+  .completed-rung .rung-mark-btn { display: none; }
+
+  /* Daily log */
+  .daily-log {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px 32px;
+    margin-bottom: 28px;
+    box-shadow: 0 4px 24px rgba(26,26,46,0.06);
+  }
+
+  .log-date-nav {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .log-date-nav button {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--warm);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+    color: var(--muted);
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .log-date-nav button:hover { background: var(--blush); color: var(--ink); }
+
+  .log-date-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 400;
+    flex: 1;
+    text-align: center;
+  }
+
+  .log-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  @media (max-width: 500px) { .log-fields { grid-template-columns: 1fr; } }
+
+  .log-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .log-field label {
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .log-field input, .log-field select, .log-field textarea {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--warm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    color: var(--ink);
+    transition: border-color 0.2s;
+    outline: none;
+    resize: none;
+  }
+
+  .log-field input:focus, .log-field select:focus, .log-field textarea:focus {
+    border-color: var(--sage);
+  }
+
+  .log-field.full { grid-column: 1 / -1; }
+
+  .mood-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  .mood-btn {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--warm);
+    cursor: pointer;
+    font-size: 1.2rem;
+    text-align: center;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .mood-btn.sel { border-color: var(--sage); background: rgba(138,171,155,0.15); transform: scale(1.05); }
+  .mood-btn:hover { transform: scale(1.05); }
+
+  .save-log-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--night);
+    color: var(--moon);
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+  }
+
+  .save-log-btn:hover { background: var(--midnight); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(26,26,46,0.2); }
+  .save-log-btn:active { transform: translateY(0); }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(26,26,46,0.04);
+    text-align: center;
+  }
+
+  .stat-number {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.2rem;
+    font-weight: 400;
+    color: var(--ink);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  /* History */
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .history-entry {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 16px;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(26,26,46,0.03);
+    transition: all 0.2s;
+  }
+
+  .history-entry:hover { transform: translateX(4px); }
+
+  .history-date {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--ink);
+    min-width: 90px;
+  }
+
+  .history-details {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .history-mood { font-size: 1.3rem; }
+
+  /* Non-negotiables checklist */
+  .checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+
+  .check-item:hover { border-color: var(--sage); background: rgba(138,171,155,0.06); }
+  .check-item.checked { border-color: var(--sage); background: rgba(138,171,155,0.1); }
+
+  .check-box {
+    width: 22px; height: 22px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    background: var(--warm);
+  }
+
+  .check-item.checked .check-box {
+    background: var(--sage);
+    border-color: var(--sage);
+    color: white;
+    font-size: 0.8rem;
+  }
+
+  .check-text { font-size: 0.88rem; line-height: 1.4; }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--warm);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 28px;
+    border: 1px solid var(--border);
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 9px 12px;
+    border: none;
+    border-radius: 9px;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .tab-btn.active {
+    background: white;
+    color: var(--ink);
+    box-shadow: 0 2px 8px rgba(26,26,46,0.08);
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--night);
+    color: var(--moon);
+    padding: 12px 24px;
+    border-radius: 100px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    z-index: 999;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 8px 30px rgba(26,26,46,0.25);
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Stars decoration */
+  .stars {
+    position: fixed;
+    top: 0; right: 0;
+    width: 200px; height: 200px;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  .star-dot {
+    position: absolute;
+    width: 3px; height: 3px;
+    background: var(--star);
+    border-radius: 50%;
+    animation: twinkle 3s ease-in-out infinite;
+  }
+
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.4); }
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    header { padding: 40px 10px 24px; }
+    .progress-section, .feed-tracker, .daily-log { padding: 20px; }
+    .nap-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--warm); }
+  ::-webkit-scrollbar-thumb { background: var(--blush); border-radius: 3px; }
+
+  .empty-history {
+    text-align: center;
+    padding: 40px;
+    color: var(--muted);
+    font-style: italic;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+  }
+
+  .intro-note {
+    background: linear-gradient(135deg, rgba(138,171,155,0.12), rgba(212,133,106,0.08));
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .intro-note strong { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<div class="container">
+
+  <header>
+    <span class="moon-icon">🌙</span>
+    <h1>Luna Sleep <em>Plan</em></h1>
+    <p>Personalised tracker · 14-week programme</p>
+  </header>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('today')">Today</button>
+    <button class="tab-btn" onclick="switchTab('plan')">The Plan</button>
+    <button class="tab-btn" onclick="switchTab('log')">Night Log</button>
+    <button class="tab-btn" onclick="switchTab('history')">History</button>
+  </div>
+
+  <!-- TODAY TAB -->
+  <div class="tab-panel active" id="tab-today">
+
+    <!-- Overall progress -->
+    <div class="progress-section">
+      <div class="progress-header">
+        <h2>Overall Progress</h2>
+        <span class="day-count" id="day-count-label">Day 1 of 42</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progress-fill" style="width: 0%"></div>
+      </div>
+      <div class="phase-pills">
+        <div class="phase-pill" id="pill-phase1">Phase 1 · Foundations</div>
+        <div class="phase-pill" id="pill-phase2">Phase 2 · Fading</div>
+        <div class="phase-pill" id="pill-phase3">Consolidation</div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-number" id="stat-wakings">—</div>
+        <div class="stat-label">Avg Wakings</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-stretch">—</div>
+        <div class="stat-label">Best Stretch (hrs)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-feeds">—</div>
+        <div class="stat-label">Avg Night Feeds</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-days">0</div>
+        <div class="stat-label">Days Logged</div>
+      </div>
+    </div>
+
+    <!-- Today's nap schedule -->
+    <div class="section-title">Today's Nap Schedule</div>
+    <div class="nap-grid">
+      <div class="nap-card" id="nap-card-1">
+        <div class="nap-label">Nap 1</div>
+        <div class="nap-time">08:30</div>
+        <div class="nap-duration">45–60 min · wake by 09:30</div>
+        <button class="nap-done-btn" onclick="toggleNap(1)">Mark done ✓</button>
+      </div>
+      <div class="nap-card" id="nap-card-2">
+        <div class="nap-label">Nap 2</div>
+        <div class="nap-time">11:30</div>
+        <div class="nap-duration">45–60 min · wake by 12:30</div>
+        <button class="nap-done-btn" onclick="toggleNap(2)">Mark done ✓</button>
+      </div>
+      <div class="nap-card" id="nap-card-3">
+        <div class="nap-label">Nap 3</div>
+        <div class="nap-time">14:30</div>
+        <div class="nap-duration">45–60 min · wake by 15:30</div>
+        <button class="nap-done-btn" onclick="toggleNap(3)">Mark done ✓</button>
+      </div>
+      <div class="nap-card catnap" id="nap-card-4">
+        <div class="nap-label">Catnap ⚠️</div>
+        <div class="nap-time">17:00</div>
+        <div class="nap-duration">MAX 20 min · wake by 17:20</div>
+        <button class="nap-done-btn" onclick="toggleNap(4)">Mark done ✓</button>
+      </div>
+    </div>
+
+    <!-- Daily non-negotiables -->
+    <div class="section-title">Daily Non-Negotiables</div>
+    <div class="checklist" id="checklist">
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"></div>
+        <div class="check-text">Cap nap 4 at max 20 mins (wake if needed)</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"></div>
+        <div class="check-text">Feed at the <strong>start</strong> of bedtime routine (not end)</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"></div>
+        <div class="check-text">White noise on — continuous all night</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"></div>
+        <div class="check-text">Partner leads non-feed resettles overnight</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"></div>
+        <div class="check-text">Follow today's fading rung — no skipping ahead</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"></div>
+        <div class="check-text">Pick up before full distress — calm then retry</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PLAN TAB -->
+  <div class="tab-panel" id="tab-plan">
+
+    <div class="intro-note">
+      <strong>How this works:</strong> Gradually reduce the level of input needed for baby to fall asleep at the start of the night. As she learns to self-settle at bedtime, overnight wake-ups will naturally reduce. Work through the rungs below at your own pace — don't skip steps.
+    </div>
+
+    <div class="section-title">The Fading Ladder</div>
+    <div class="ladder-wrap" id="ladder-wrap">
+      <!-- Rungs injected by JS -->
+    </div>
+
+    <div class="section-title">Bedtime Routine</div>
+    <div style="background:var(--card-bg);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:20px;padding:28px 32px;box-shadow:0 4px 24px rgba(26,26,46,0.06);margin-bottom:28px;">
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;gap:16px;align-items:center;">
+          <div style="width:32px;height:32px;background:var(--sage);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;font-weight:600;flex-shrink:0;">1</div>
+          <div><div style="font-weight:500;font-size:0.9rem;">🍼 Feed</div><div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">Full feed — moved to START of routine to break feed-to-sleep link</div></div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:center;">
+          <div style="width:32px;height:32px;background:var(--sage);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;font-weight:600;flex-shrink:0;">2</div>
+          <div><div style="font-weight:500;font-size:0.9rem;">👶 Nappy change</div><div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">Clean and comfortable for the night</div></div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:center;">
+          <div style="width:32px;height:32px;background:var(--sage);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;font-weight:600;flex-shrink:0;">3</div>
+          <div><div style="font-weight:500;font-size:0.9rem;">🛏 Sleeping bag</div><div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">Sleep cue — signals bedtime is approaching</div></div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:center;">
+          <div style="width:32px;height:32px;background:var(--sage);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;font-weight:600;flex-shrink:0;">4</div>
+          <div><div style="font-weight:500;font-size:0.9rem;">📖 Book or song</div><div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">Wind-down in dim room — keep it consistent</div></div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:center;">
+          <div style="width:32px;height:32px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;font-weight:600;flex-shrink:0;">5</div>
+          <div><div style="font-weight:500;font-size:0.9rem;">😴 Settle — per today's rung</div><div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">Target bedtime: ~19:30 · Aim for 2hr 10min post-catnap</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Night Feeds — What to Keep</div>
+    <div style="background:var(--card-bg);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:20px;padding:28px 32px;box-shadow:0 4px 24px rgba(26,26,46,0.06);margin-bottom:28px;">
+      <p style="font-size:0.88rem;line-height:1.7;color:var(--ink);margin-bottom:16px;">At 24 weeks and 7.2kg, <strong>2–3 genuine night feeds are normal and needed.</strong> Do not try to drop feeds at the same time as sleep shaping — one thing at a time.</p>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="padding:12px 16px;background:rgba(138,171,155,0.1);border:1px solid var(--sage-light);border-radius:10px;font-size:0.85rem;line-height:1.5;"><strong>✅ Do feed</strong> if it's been 3+ hours since the last feed</div>
+        <div style="padding:12px 16px;background:rgba(212,133,106,0.1);border:1px solid rgba(212,133,106,0.3);border-radius:10px;font-size:0.85rem;line-height:1.5;"><strong>🔄 Partner first</strong> if it's been under 2.5hrs — try non-feed resettle for 10 mins before you feed</div>
+        <div style="padding:12px 16px;background:var(--warm);border:1px solid var(--border);border-radius:10px;font-size:0.85rem;line-height:1.5;"><strong>🎯 Goal</strong> First stretch of 3–4hrs from bedtime (first feed ~10:30–11pm)</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- NIGHT LOG TAB -->
+  <div class="tab-panel" id="tab-log">
+
+    <div class="daily-log">
+      <div class="log-date-nav">
+        <button onclick="changeLogDate(-1)">‹</button>
+        <div class="log-date-label" id="log-date-label">Tonight</div>
+        <button onclick="changeLogDate(1)">›</button>
+      </div>
+
+      <div class="log-fields">
+        <div class="log-field">
+          <label>Bedtime</label>
+          <input type="time" id="log-bedtime" value="19:30">
+        </div>
+        <div class="log-field">
+          <label>Wake for day</label>
+          <input type="time" id="log-waketime" value="06:25">
+        </div>
+        <div class="log-field">
+          <label>Number of wakings</label>
+          <input type="number" id="log-wakings" min="0" max="15" placeholder="e.g. 4">
+        </div>
+        <div class="log-field">
+          <label>Number of feeds</label>
+          <input type="number" id="log-feeds" min="0" max="10" placeholder="e.g. 3">
+        </div>
+        <div class="log-field">
+          <label>Longest stretch (hours)</label>
+          <input type="number" id="log-stretch" min="0" max="12" step="0.5" placeholder="e.g. 3.5">
+        </div>
+        <div class="log-field">
+          <label>Fading rung used</label>
+          <select id="log-rung">
+            <option value="">— select —</option>
+            <option value="1">Rung 1 · Put down drowsy</option>
+            <option value="2">Rung 2 · Chest contact in cot</option>
+            <option value="3">Rung 3 · Less rocking, more swaying</option>
+            <option value="4">Rung 4 · Hold still, then put down</option>
+            <option value="5">Rung 5 · Chest contact only</option>
+            <option value="6">Rung 6 · Cot awake, hand nearby</option>
+          </select>
+        </div>
+        <div class="log-field full">
+          <label>Parent mood / how did it feel?</label>
+          <div class="mood-buttons" id="mood-buttons">
+            <button class="mood-btn" onclick="selectMood(this, '😩')">😩</button>
+            <button class="mood-btn" onclick="selectMood(this, '😔')">😔</button>
+            <button class="mood-btn" onclick="selectMood(this, '😐')">😐</button>
+            <button class="mood-btn" onclick="selectMood(this, '🙂')">🙂</button>
+            <button class="mood-btn" onclick="selectMood(this, '😊')">😊</button>
+          </div>
+        </div>
+        <div class="log-field full">
+          <label>Notes (what worked, what was hard)</label>
+          <textarea id="log-notes" rows="3" placeholder="e.g. Partner settled twice without feed. Rung 2 went better than expected..."></textarea>
+        </div>
+      </div>
+
+      <button class="save-log-btn" onclick="saveLog()">Save tonight's log 🌙</button>
+    </div>
+
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div class="tab-panel" id="tab-history">
+
+    <div class="section-title">Sleep History</div>
+    <div class="history-list" id="history-list">
+      <div class="empty-history">No nights logged yet — start tonight 🌙</div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────
+const STATE_KEY = 'luna_sleep_v1';
+let state = {
+  startDate: new Date().toISOString().split('T')[0],
+  napsDone: {},        // date -> [1,2,3,4]
+  logs: [],            // array of log objects
+  currentRung: 1,      // 1-6
+  completedRungs: [],
+  mood: null,
+};
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STATE_KEY);
+    if (saved) state = { ...state, ...JSON.parse(saved) };
+  } catch(e) {}
+}
+
+function saveState() {
+  localStorage.setItem(STATE_KEY, JSON.stringify(state));
+}
+
+// ── Fading Ladder Data ─────────────────────────────
+const RUNGS = [
+  { days: 'Days 1–3', desc: 'Rock as normal but put baby down drowsy, not fully asleep. If she fusses, give 60 seconds of stillness in the cot before picking up. Repeat as needed.' },
+  { days: 'Days 4–5', desc: 'Rock until very drowsy. Put down. If she fusses, place hand firmly on chest — no picking up yet. If she escalates to sustained cry, pick up, calm fully, retry.' },
+  { days: 'Days 6–7', desc: 'Rock until drowsy but with less rocking — transition to swaying then stillness while holding. Put down with chest contact.' },
+  { days: 'Days 8–9', desc: 'Hold without rocking. Put down drowsy with chest contact and gentle shushing. Remove hand gradually once she is settled.' },
+  { days: 'Days 10–12', desc: 'Hold without any movement. Put down. Remove hand gradually once she is still and settled.' },
+  { days: 'Days 13–14', desc: '🎯 Goal position: Place in cot awake-but-calm. Sit beside cot with a hand resting on her. She falls asleep with your presence but without motion.' },
+];
+
+function renderLadder() {
+  const wrap = document.getElementById('ladder-wrap');
+  wrap.innerHTML = '';
+  RUNGS.forEach((rung, i) => {
+    const n = i + 1;
+    const isActive = n === state.currentRung;
+    const isDone = state.completedRungs.includes(n);
+    const div = document.createElement('div');
+    div.className = 'rung' + (isActive ? ' active-rung' : '') + (isDone ? ' completed-rung' : '');
+    div.innerHTML = `
+      <div class="rung-number">${n}</div>
+      <div class="rung-content">
+        <div class="rung-days">${rung.days}</div>
+        <div class="rung-desc">${rung.desc}</div>
+      </div>
+      ${!isDone ? `<button class="rung-mark-btn" onclick="markRungDone(${n})">Done ✓</button>` : ''}
+    `;
+    wrap.appendChild(div);
+  });
+}
+
+function markRungDone(n) {
+  if (!state.completedRungs.includes(n)) state.completedRungs.push(n);
+  if (state.currentRung === n && n < 6) state.currentRung = n + 1;
+  saveState();
+  renderLadder();
+  showToast(`Rung ${n} complete! Moving to Rung ${Math.min(n+1,6)} 🌱`);
+  updateProgress();
+}
+
+// ── Progress ───────────────────────────────────────
+function getDayNumber() {
+  const start = new Date(state.startDate);
+  const today = new Date();
+  const diff = Math.floor((today - start) / 86400000) + 1;
+  return Math.max(1, diff);
+}
+
+function updateProgress() {
+  const day = getDayNumber();
+  const total = 42;
+  const pct = Math.min((day / total) * 100, 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('day-count-label').textContent = `Day ${day} of ${total}`;
+
+  const p1 = document.getElementById('pill-phase1');
+  const p2 = document.getElementById('pill-phase2');
+  const p3 = document.getElementById('pill-phase3');
+
+  p1.className = 'phase-pill';
+  p2.className = 'phase-pill';
+  p3.className = 'phase-pill';
+
+  if (day <= 5) { p1.classList.add('active'); }
+  else if (day <= 14) { p1.classList.add('done'); p2.classList.add('active'); }
+  else { p1.classList.add('done'); p2.classList.add('done'); p3.classList.add('active'); }
+}
+
+// ── Stats ──────────────────────────────────────────
+function updateStats() {
+  const logs = state.logs;
+  if (!logs.length) return;
+  const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : '—';
+  const wakings = logs.map(l=>l.wakings).filter(x=>x!=='');
+  const feeds = logs.map(l=>l.feeds).filter(x=>x!=='');
+  const stretches = logs.map(l=>l.stretch).filter(x=>x!=='');
+  document.getElementById('stat-wakings').textContent = wakings.length ? avg(wakings.map(Number)) : '—';
+  document.getElementById('stat-feeds').textContent = feeds.length ? avg(feeds.map(Number)) : '—';
+  document.getElementById('stat-stretch').textContent = stretches.length ? Math.max(...stretches.map(Number)).toFixed(1) : '—';
+  document.getElementById('stat-days').textContent = logs.length;
+}
+
+// ── Naps ───────────────────────────────────────────
+function getTodayKey() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function toggleNap(n) {
+  const key = getTodayKey();
+  if (!state.napsDone[key]) state.napsDone[key] = [];
+  const idx = state.napsDone[key].indexOf(n);
+  if (idx === -1) state.napsDone[key].push(n);
+  else state.napsDone[key].splice(idx, 1);
+  saveState();
+  renderNaps();
+}
+
+function renderNaps() {
+  const key = getTodayKey();
+  const done = state.napsDone[key] || [];
+  for (let i = 1; i <= 4; i++) {
+    const btn = document.querySelector(`#nap-card-${i} .nap-done-btn`);
+    if (done.includes(i)) {
+      btn.classList.add('done');
+      btn.textContent = 'Done ✓';
+    } else {
+      btn.classList.remove('done');
+      btn.textContent = 'Mark done ✓';
+    }
+  }
+}
+
+// ── Checklist ──────────────────────────────────────
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+  const box = el.querySelector('.check-box');
+  box.textContent = el.classList.contains('checked') ? '✓' : '';
+}
+
+// ── Log ────────────────────────────────────────────
+let logDateOffset = 0;
+let selectedMood = null;
+
+function getLogDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + logDateOffset);
+  return d;
+}
+
+function formatLogDate(d) {
+  const opts = { weekday: 'long', day: 'numeric', month: 'long' };
+  const str = d.toLocaleDateString('en-GB', opts);
+  if (logDateOffset === 0) return 'Tonight · ' + str;
+  if (logDateOffset === -1) return 'Last night · ' + str;
+  return str;
+}
+
+function changeLogDate(dir) {
+  logDateOffset = Math.min(0, logDateOffset + dir);
+  document.getElementById('log-date-label').textContent = formatLogDate(getLogDate());
+}
+
+function selectMood(btn, emoji) {
+  selectedMood = emoji;
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+
+function saveLog() {
+  const d = getLogDate();
+  const dateKey = d.toISOString().split('T')[0];
+  const log = {
+    date: dateKey,
+    displayDate: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+    bedtime: document.getElementById('log-bedtime').value,
+    waketime: document.getElementById('log-waketime').value,
+    wakings: document.getElementById('log-wakings').value,
+    feeds: document.getElementById('log-feeds').value,
+    stretch: document.getElementById('log-stretch').value,
+    rung: document.getElementById('log-rung').value,
+    mood: selectedMood,
+    notes: document.getElementById('log-notes').value,
+  };
+  // Replace if same date
+  const existIdx = state.logs.findIndex(l => l.date === dateKey);
+  if (existIdx > -1) state.logs[existIdx] = log;
+  else state.logs.unshift(log);
+  saveState();
+  updateStats();
+  renderHistory();
+  showToast('Night logged! 🌙 Great work tracking.');
+}
+
+// ── History ────────────────────────────────────────
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  if (!state.logs.length) {
+    list.innerHTML = '<div class="empty-history">No nights logged yet — start tonight 🌙</div>';
+    return;
+  }
+  list.innerHTML = state.logs.map(l => `
+    <div class="history-entry">
+      <div class="history-date">${l.displayDate}</div>
+      <div class="history-details">
+        ${l.wakings !== '' ? `<strong>${l.wakings}</strong> wakings · ` : ''}
+        ${l.feeds !== '' ? `<strong>${l.feeds}</strong> feeds · ` : ''}
+        ${l.stretch !== '' ? `longest stretch <strong>${l.stretch}h</strong>` : ''}
+        ${l.rung ? ` · Rung ${l.rung}` : ''}
+        ${l.notes ? `<br><span style="color:var(--muted)">${l.notes.substring(0,80)}${l.notes.length>80?'…':''}</span>` : ''}
+      </div>
+      <div class="history-mood">${l.mood || '—'}</div>
+    </div>
+  `).join('');
+}
+
+// ── Tabs ───────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  const panels = ['today','plan','log','history'];
+  const idx = panels.indexOf(name);
+  document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── Toast ──────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Stars ──────────────────────────────────────────
+function renderStars() {
+  const wrap = document.getElementById('stars');
+  for (let i = 0; i < 12; i++) {
+    const s = document.createElement('div');
+    s.className = 'star-dot';
+    s.style.cssText = `
+      top: ${Math.random()*100}%;
+      left: ${Math.random()*100}%;
+      animation-delay: ${Math.random()*3}s;
+      animation-duration: ${2+Math.random()*3}s;
+      width: ${Math.random() > 0.7 ? 4 : 2}px;
+      height: ${Math.random() > 0.7 ? 4 : 2}px;
+    `;
+    wrap.appendChild(s);
+  }
+}
+
+// ── Init ───────────────────────────────────────────
+loadState();
+renderStars();
+renderLadder();
+renderNaps();
+renderHistory();
+updateStats();
+updateProgress();
+document.getElementById('log-date-label').textContent = formatLogDate(getLogDate());
+</script>
+</body>
+</html>
